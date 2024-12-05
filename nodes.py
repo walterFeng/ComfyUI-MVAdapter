@@ -26,6 +26,7 @@ from .mvadapter.schedulers.scheduling_shift_snr import ShiftSNRScheduler
 
 class DiffusersPipelineLoader:
     def __init__(self):
+        self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
         self.dtype = torch.float16
 
     @classmethod
@@ -56,7 +57,9 @@ class DiffusersPipelineLoader:
     def create_pipeline(self, ckpt_name, pipeline_name):
         pipeline_class = PIPELINES[pipeline_name]
         pipe = pipeline_class.from_pretrained(
-            pretrained_model_name_or_path=ckpt_name, torch_dtype=self.dtype
+            pretrained_model_name_or_path=ckpt_name,
+            torch_dtype=self.dtype,
+            cache_dir=self.hf_dir,
         )
         return ((pipe, ckpt_name), pipe.vae, pipe.scheduler)
 
@@ -110,6 +113,7 @@ class LdmPipelineLoader:
 
 class DiffusersVaeLoader:
     def __init__(self):
+        self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
         self.dtype = torch.float16
 
     @classmethod
@@ -131,7 +135,9 @@ class DiffusersVaeLoader:
 
     def create_pipeline(self, vae_name):
         vae = AutoencoderKL.from_pretrained(
-            pretrained_model_name_or_path=vae_name, torch_dtype=self.dtype
+            pretrained_model_name_or_path=vae_name,
+            torch_dtype=self.dtype,
+            cache_dir=self.hf_dir,
         )
 
         return (vae,)
@@ -174,6 +180,7 @@ class LdmVaeLoader:
 class DiffusersSchedulerLoader:
     def __init__(self):
         self.tmp_dir = folder_paths.get_temp_directory()
+        self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
         self.dtype = torch.float16
 
     @classmethod
@@ -206,7 +213,7 @@ class DiffusersSchedulerLoader:
         scheduler = SCHEDULERS[scheduler_name].from_pretrained(
             pretrained_model_name_or_path=pipeline[1],
             torch_dtype=self.dtype,
-            cache_dir=self.tmp_dir,
+            cache_dir=self.hf_dir,
             subfolder="scheduler",
         )
         if shift_snr:
@@ -221,6 +228,7 @@ class DiffusersSchedulerLoader:
 
 class DiffusersModelMakeup:
     def __init__(self):
+        self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
         self.torch_device = get_torch_device()
         self.dtype = torch.float16
 
@@ -263,7 +271,9 @@ class DiffusersModelMakeup:
 
         if load_mvadapter:
             pipeline.init_custom_adapter(num_views=num_views)
-            pipeline.load_custom_adapter(adapter_path, weight_name=adapter_name)
+            pipeline.load_custom_adapter(
+                adapter_path, weight_name=adapter_name, cache_dir=self.hf_dir
+            )
             pipeline.cond_encoder.to(device=self.torch_device, dtype=self.dtype)
 
         pipeline = pipeline.to(self.torch_device, self.dtype)
@@ -425,6 +435,7 @@ class DiffusersMVSampler:
 
 class BiRefNet:
     def __init__(self):
+        self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
         self.torch_device = get_torch_device()
         self.dtype = torch.float32
 
@@ -453,7 +464,7 @@ class BiRefNet:
 
     def load_model_fn(self, ckpt_name):
         model = AutoModelForImageSegmentation.from_pretrained(
-            ckpt_name, trust_remote_code=True
+            ckpt_name, trust_remote_code=True, cache_dir=self.hf_dir
         ).to(self.torch_device, self.dtype)
 
         transform_image = transforms.Compose(
