@@ -239,8 +239,7 @@ def custom_convert_ldm_vae_checkpoint(checkpoint, config):
 
 # Reference from : https://github.com/huggingface/diffusers/blob/main/scripts/convert_vae_pt_to_diffusers.py
 def vae_pt_to_vae_diffuser(
-    checkpoint_path: str,
-    output_path: str,
+    checkpoint_path: str, output_path: str, force_upcast: bool = True
 ):
     # Only support V1
     r = requests.get(
@@ -263,6 +262,7 @@ def vae_pt_to_vae_diffuser(
 
     # Convert the VAE model.
     vae_config = create_vae_diffusers_config(original_config, image_size=image_size)
+    vae_config.update({"force_upcast": force_upcast})
     converted_vae_checkpoint = custom_convert_ldm_vae_checkpoint(checkpoint, vae_config)
 
     vae = AutoencoderKL(**vae_config)

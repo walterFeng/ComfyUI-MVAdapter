@@ -31,7 +31,8 @@
                 "Node name for S&R": "LdmVaeLoader"
             },
             "widgets_values": [
-                "sdxl_vae.safetensors"
+                "sdxl_vae.safetensors",
+                false
             ]
         },
         {
