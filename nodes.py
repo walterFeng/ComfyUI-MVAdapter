@@ -250,6 +250,9 @@ class DiffusersModelMakeup:
                 ),
                 "num_views": ("INT", {"default": 6, "min": 1, "max": 12}),
             },
+            "optional": {
+                "enable_vae_slicing": ("BOOLEAN", {"default": False}),
+            },
         }
 
     RETURN_TYPES = ("PIPELINE",)
@@ -267,6 +270,7 @@ class DiffusersModelMakeup:
         adapter_path,
         adapter_name,
         num_views,
+        enable_vae_slicing=None,
     ):
         pipeline = pipeline[0]
         pipeline.vae = autoencoder
@@ -280,6 +284,10 @@ class DiffusersModelMakeup:
             pipeline.cond_encoder.to(device=self.torch_device, dtype=self.dtype)
 
         pipeline = pipeline.to(self.torch_device, self.dtype)
+
+        if enable_vae_slicing:
+            pipeline.enable_vae_slicing()
+
         return (pipeline,)
 
 
