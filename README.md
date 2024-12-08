@@ -30,9 +30,11 @@ We also provide the nodes `Ldm**Loader` to support loading text-to-image models 
 If your GPU resources are limited, we recommend using the following configuration:
 
 * Use [madebyollin/sdxl-vae-fp16-fix](https://huggingface.co/madebyollin/sdxl-vae-fp16-fix) as VAE. If using ldm-format pipeline, remember to set `upcast_fp32` to `False`.
+
 ![upcast_fp32_to_false](assets/comfyui_ldm_vae.png)
 
 * Set `enable_vae_slicing` in the Diffusers Model Makeup node to `True`.
+
 ![enable_vae_slicing](assets/comfyui_model_makeup.png)
 
 However, since SDXL is used as the base model, it still requires about 13G to 14G GPU memory.
