@@ -61,12 +61,11 @@ class DiffusersPipelineLoader:
             torch_dtype=self.dtype,
             cache_dir=self.hf_dir,
         )
-        return ((pipe, ckpt_name), pipe.vae, pipe.scheduler)
+        return (pipe, pipe.vae, pipe.scheduler)
 
 
 class LdmPipelineLoader:
     def __init__(self):
-        self.tmp_dir = folder_paths.get_temp_directory()
         self.dtype = torch.float16
 
     @classmethod
@@ -92,23 +91,16 @@ class LdmPipelineLoader:
     CATEGORY = "Diffusers"
 
     def create_pipeline(self, ckpt_name, pipeline_name):
-        ckpt_cache_path = os.path.join(self.tmp_dir, ckpt_name)
         pipeline_class = PIPELINES[pipeline_name]
 
-        pipeline_class.from_single_file(
+        pipe = pipeline_class.from_single_file(
             pretrained_model_link_or_path=folder_paths.get_full_path(
                 "checkpoints", ckpt_name
             ),
             torch_dtype=self.dtype,
-            cache_dir=self.tmp_dir,
-        ).save_pretrained(ckpt_cache_path, safe_serialization=True)
-
-        pipe = pipeline_class.from_pretrained(
-            pretrained_model_name_or_path=ckpt_cache_path,
-            torch_dtype=self.dtype,
-            cache_dir=self.tmp_dir,
         )
-        return ((pipe, ckpt_cache_path), pipe.vae, pipe.scheduler)
+
+        return (pipe, pipe.vae, pipe.scheduler)
 
 
 class DiffusersVaeLoader:
@@ -145,7 +137,6 @@ class DiffusersVaeLoader:
 
 class LdmVaeLoader:
     def __init__(self):
-        self.tmp_dir = folder_paths.get_temp_directory()
         self.dtype = torch.float16
 
     @classmethod
@@ -153,7 +144,7 @@ class LdmVaeLoader:
         return {
             "required": {
                 "vae_name": (folder_paths.get_filename_list("vae"),),
-                "upcast_fp32": ("BOOLEAN", {"default": True}),
+                "upcast_fp32": ("BOOLEAN", {"default": False}),
             },
         }
 
@@ -164,25 +155,15 @@ class LdmVaeLoader:
     CATEGORY = "Diffusers"
 
     def create_pipeline(self, vae_name, upcast_fp32):
-        ckpt_cache_path = os.path.join(self.tmp_dir, vae_name)
-        vae_pt_to_vae_diffuser(
-            folder_paths.get_full_path("vae", vae_name),
-            ckpt_cache_path,
-            force_upcast=upcast_fp32,
-        )
-
-        vae = AutoencoderKL.from_pretrained(
-            pretrained_model_name_or_path=ckpt_cache_path,
-            torch_dtype=self.dtype,
-            cache_dir=self.tmp_dir,
-        )
+        vae = vae_pt_to_vae_diffuser(
+            folder_paths.get_full_path("vae", vae_name), force_upcast=upcast_fp32
+        ).to(self.dtype)
 
         return (vae,)
 
 
 class DiffusersSchedulerLoader:
     def __init__(self):
-        self.tmp_dir = folder_paths.get_temp_directory()
         self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
         self.dtype = torch.float16
 
@@ -213,11 +194,8 @@ class DiffusersSchedulerLoader:
     def load_scheduler(
         self, pipeline, scheduler_name, shift_snr, shift_mode, shift_scale
     ):
-        scheduler = SCHEDULERS[scheduler_name].from_pretrained(
-            pretrained_model_name_or_path=pipeline[1],
-            torch_dtype=self.dtype,
-            cache_dir=self.hf_dir,
-            subfolder="scheduler",
+        scheduler = SCHEDULERS[scheduler_name].from_config(
+            pipeline.scheduler.config, torch_dtype=self.dtype
         )
         if shift_snr:
             scheduler = ShiftSNRScheduler.from_scheduler(
@@ -251,7 +229,7 @@ class DiffusersModelMakeup:
                 "num_views": ("INT", {"default": 6, "min": 1, "max": 12}),
             },
             "optional": {
-                "enable_vae_slicing": ("BOOLEAN", {"default": False}),
+                "enable_vae_slicing": ("BOOLEAN", {"default": True}),
             },
         }
 
@@ -270,9 +248,8 @@ class DiffusersModelMakeup:
         adapter_path,
         adapter_name,
         num_views,
-        enable_vae_slicing=None,
+        enable_vae_slicing=True,
     ):
-        pipeline = pipeline[0]
         pipeline.vae = autoencoder
         pipeline.scheduler = scheduler
 

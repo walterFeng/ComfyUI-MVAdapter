@@ -238,9 +238,7 @@ def custom_convert_ldm_vae_checkpoint(checkpoint, config):
 
 
 # Reference from : https://github.com/huggingface/diffusers/blob/main/scripts/convert_vae_pt_to_diffusers.py
-def vae_pt_to_vae_diffuser(
-    checkpoint_path: str, output_path: str, force_upcast: bool = True
-):
+def vae_pt_to_vae_diffuser(checkpoint_path: str, force_upcast: bool = True):
     # Only support V1
     r = requests.get(
         " https://raw.githubusercontent.com/CompVis/stable-diffusion/main/configs/stable-diffusion/v1-inference.yaml"
@@ -267,7 +265,8 @@ def vae_pt_to_vae_diffuser(
 
     vae = AutoencoderKL(**vae_config)
     vae.load_state_dict(converted_vae_checkpoint)
-    vae.save_pretrained(output_path)
+
+    return vae
 
 
 def convert_images_to_tensors(images: list[Image.Image]):
