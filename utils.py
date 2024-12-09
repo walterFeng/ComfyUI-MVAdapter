@@ -1,6 +1,7 @@
 # Adapted from https://github.com/Limitex/ComfyUI-Diffusers/blob/main/utils.py
 
 import io
+import os
 import torch
 import requests
 import numpy as np
@@ -39,6 +40,8 @@ from .mvadapter.utils import (
     make_image_grid,
 )
 
+
+NODE_CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
 
 PIPELINES = {
     "StableDiffusionXLPipeline": StableDiffusionXLPipeline,
@@ -240,9 +243,10 @@ def custom_convert_ldm_vae_checkpoint(checkpoint, config):
 # Reference from : https://github.com/huggingface/diffusers/blob/main/scripts/convert_vae_pt_to_diffusers.py
 def vae_pt_to_vae_diffuser(checkpoint_path: str, force_upcast: bool = True):
     try:
-        original_config = OmegaConf.load(
-            "custom_nodes/ComfyUI-MVAdapter/cache/stable-diffusion-v1-inference.yaml"
+        config_path = os.path.join(
+            NODE_CACHE_PATH, "stable-diffusion-v1-inference.yaml"
         )
+        original_config = OmegaConf.load(config_path)
     except FileNotFoundError as e:
         print(f"Warning: {e}")
 
