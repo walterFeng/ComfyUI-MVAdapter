@@ -66,6 +66,7 @@ class DiffusersPipelineLoader:
 
 class LdmPipelineLoader:
     def __init__(self):
+        self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
         self.dtype = torch.float16
 
     @classmethod
@@ -98,6 +99,7 @@ class LdmPipelineLoader:
                 "checkpoints", ckpt_name
             ),
             torch_dtype=self.dtype,
+            cache_dir=self.hf_dir,
         )
 
         return (pipe, pipe.vae, pipe.scheduler)
