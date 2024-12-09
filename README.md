@@ -2,11 +2,10 @@
 
 This extension integrates [MV-Adapter](https://github.com/huanngzh/MV-Adapter) into ComfyUI, allowing users to generate multi-view consistent images from text prompts or single images directly within the ComfyUI interface.
 
-## Features
+## 🔥 Feature Updates
 
-* Generate multi-view consistent images from text prompts
-* Generate multi-view consistent images from a single image
-* More features are coming...
+* [2024-12-09] Support integration with SDXL LoRA
+* [2024-12-02] Generate multi-view consistent images from text prompts or a single image
 
 ## Installation
 
@@ -43,14 +42,30 @@ However, since SDXL is used as the base model, it still requires about 13G to 14
 
 ### Text to Multi-view Images
 
+**With SDXL or other base models**
+
 ![comfyui_t2mv](assets/comfyui_t2mv.png)
 
 * `workflows/t2mv_sdxl_diffusers.json` for loading diffusers-format models
 * `workflows/t2mv_sdxl_ldm.json` for loading ldm-format models
 
+**With LoRA**
+
+![comfyui_t2mv_lora](assets/comfyui_t2mv_lora.png)
+
+`workflows/t2mv_sdxl_ldm_lora.json` for loading ldm-format models with LoRA for text-to-multi-view generation
+
 ### Image to Multi-view Images
+
+**With SDXL or other base models**
 
 ![comfyui_i2mv](assets/comfyui_i2mv.png)
 
 * `workflows/i2mv_sdxl_diffusers.json` for loading diffusers-format models
 * `workflows/i2mv_sdxl_ldm.json` for loading ldm-format models
+
+**With LoRA**
+
+![comfyui_i2mv_lora](assets/comfyui_i2mv_lora.png)
+
+`workflows/i2mv_sdxl_ldm_lora.json` for loading ldm-format models with LoRA for image-to-multi-view generation
