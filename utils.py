@@ -239,13 +239,19 @@ def custom_convert_ldm_vae_checkpoint(checkpoint, config):
 
 # Reference from : https://github.com/huggingface/diffusers/blob/main/scripts/convert_vae_pt_to_diffusers.py
 def vae_pt_to_vae_diffuser(checkpoint_path: str, force_upcast: bool = True):
-    # Only support V1
-    r = requests.get(
-        " https://raw.githubusercontent.com/CompVis/stable-diffusion/main/configs/stable-diffusion/v1-inference.yaml"
-    )
-    io_obj = io.BytesIO(r.content)
+    try:
+        original_config = OmegaConf.load(
+            "custom_nodes/ComfyUI-MVAdapter/cache/stable-diffusion-v1-inference.yaml"
+        )
+    except FileNotFoundError as e:
+        print(f"Warning: {e}")
 
-    original_config = OmegaConf.load(io_obj)
+        r = requests.get(
+            "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/configs/stable-diffusion/v1-inference.yaml"
+        )
+        io_obj = io.BytesIO(r.content)
+        original_config = OmegaConf.load(io_obj)
+
     image_size = 512
     device = "cuda" if torch.cuda.is_available() else "cpu"
     if checkpoint_path.endswith("safetensors"):
