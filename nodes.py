@@ -146,7 +146,7 @@ class LdmVaeLoader:
         return {
             "required": {
                 "vae_name": (folder_paths.get_filename_list("vae"),),
-                "upcast_fp32": ("BOOLEAN", {"default": False}),
+                "upcast_fp32": ("BOOLEAN", {"default": True}),
             },
         }
 
