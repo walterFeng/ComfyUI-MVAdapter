@@ -32,7 +32,7 @@
             },
             "widgets_values": [
                 "sdxl_vae.safetensors",
-                false
+                true
             ]
         },
         {
