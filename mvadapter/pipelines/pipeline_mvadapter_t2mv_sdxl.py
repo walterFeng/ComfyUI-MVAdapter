@@ -747,6 +747,14 @@ class MVAdapterT2MVSDXLPipeline(StableDiffusionXLPipeline, CustomAdapterMixin):
                 use_mv=True,
                 use_ref=False,
             ),
+            set_cross_attn_proc_func=lambda name, hs, cad, ap: self_attn_processor(
+                query_dim=hs,
+                inner_dim=hs,
+                num_views=num_views,
+                name=name,
+                use_mv=False,
+                use_ref=False,
+            ),
         )
 
         # copy decoupled attention weights from original unet
