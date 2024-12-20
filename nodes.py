@@ -281,6 +281,7 @@ class DiffusersModelMakeup:
             },
             "optional": {
                 "enable_vae_slicing": ("BOOLEAN", {"default": True}),
+                "enable_vae_tiling": ("BOOLEAN", {"default": False}),
             },
         }
 
@@ -300,6 +301,7 @@ class DiffusersModelMakeup:
         adapter_name,
         num_views,
         enable_vae_slicing=True,
+        enable_vae_tiling=False,
     ):
         pipeline.vae = autoencoder
         pipeline.scheduler = scheduler
@@ -315,6 +317,8 @@ class DiffusersModelMakeup:
 
         if enable_vae_slicing:
             pipeline.enable_vae_slicing()
+        if enable_vae_tiling:
+            pipeline.enable_vae_tiling()
 
         return (pipeline,)
 
