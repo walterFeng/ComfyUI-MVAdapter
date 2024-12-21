@@ -10,6 +10,6 @@ Repository = "https://github.com/huanngzh/ComfyUI-MVAdapter"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "huanngzh"
 DisplayName = "ComfyUI-MVAdapter"
 Icon = ""
