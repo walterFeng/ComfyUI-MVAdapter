@@ -4,6 +4,7 @@ This extension integrates [MV-Adapter](https://github.com/huanngzh/MV-Adapter) i
 
 ## 🔥 Feature Updates
 
+* [2024-12-25] Support integration with ControlNet, for applications like scribble to multi-view images
 * [2024-12-09] Support integration with SDXL LoRA
 * [2024-12-02] Generate multi-view consistent images from text prompts or a single image
 
@@ -54,6 +55,12 @@ However, since SDXL is used as the base model, it still requires about 13G to 14
 ![comfyui_t2mv_lora](assets/comfyui_t2mv_lora.png)
 
 `workflows/t2mv_sdxl_ldm_lora.json` for loading ldm-format models with LoRA for text-to-multi-view generation
+
+**With ControlNet**
+
+![comfyui_t2mv_controlnet](assets/comfyui_t2mv_controlnet.png)
+
+`workflows/t2mv_sdxl_ldm_controlnet.json` for loading diffusers-format controlnets for text-scribble-to-multi-view generation
 
 ### Image to Multi-view Images
 

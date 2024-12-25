@@ -17,7 +17,7 @@ from .utils import (
 from comfy.model_management import get_torch_device
 import folder_paths
 
-from diffusers import StableDiffusionXLPipeline, AutoencoderKL
+from diffusers import StableDiffusionXLPipeline, AutoencoderKL, ControlNetModel
 from transformers import AutoModelForImageSegmentation
 
 from .mvadapter.pipelines.pipeline_mvadapter_t2mv_sdxl import MVAdapterT2MVSDXLPipeline
@@ -258,6 +258,51 @@ class LoraModelLoader:
         return (pipeline,)
 
 
+class ControlNetModelLoader:
+    def __init__(self):
+        self.loaded_controlnet = None
+        self.dtype = torch.float16
+        self.torch_device = get_torch_device()
+        self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "pipeline": ("PIPELINE",),
+                "controlnet_name": (
+                    "STRING",
+                    {"default": "xinsir/controlnet-scribble-sdxl-1.0"},
+                ),
+            }
+        }
+
+    RETURN_TYPES = ("PIPELINE",)
+    FUNCTION = "load_controlnet"
+    CATEGORY = "Diffusers"
+
+    def load_controlnet(self, pipeline, controlnet_name):
+        controlnet = None
+        if self.loaded_controlnet is not None:
+            if self.loaded_controlnet == controlnet_name:
+                controlnet = self.loaded_controlnet
+            else:
+                del pipeline.controlnet
+                self.loaded_controlnet = None
+
+        if controlnet is None:
+            controlnet = ControlNetModel.from_pretrained(
+                controlnet_name, cache_dir=self.hf_dir, torch_dtype=self.dtype
+            )
+            pipeline.controlnet = controlnet
+            pipeline.controlnet.to(device=self.torch_device, dtype=self.dtype)
+
+            self.loaded_controlnet = controlnet_name
+            controlnet = controlnet_name
+
+        return (pipeline,)
+
+
 class DiffusersModelMakeup:
     def __init__(self):
         self.hf_dir = folder_paths.get_folder_paths("diffusers")[0]
@@ -427,6 +472,8 @@ class DiffusersMVSampler:
             },
             "optional": {
                 "reference_image": ("IMAGE",),
+                "controlnet_image": ("IMAGE",),
+                "controlnet_conditioning_scale": ("FLOAT", {"default": 1.0}),
             },
         }
 
@@ -448,6 +495,8 @@ class DiffusersMVSampler:
         cfg,
         seed,
         reference_image=None,
+        controlnet_image=None,
+        controlnet_conditioning_scale=1.0,
     ):
         control_images = prepare_camera_embed(num_views, width, self.torch_device)
 
@@ -457,6 +506,14 @@ class DiffusersMVSampler:
                 {
                     "reference_image": convert_tensors_to_images(reference_image)[0],
                     "reference_conditioning_scale": 1.0,
+                }
+            )
+        if controlnet_image is not None:
+            controlnet_image = convert_tensors_to_images(controlnet_image)
+            pipe_kwargs.update(
+                {
+                    "controlnet_image": controlnet_image,
+                    "controlnet_conditioning_scale": controlnet_conditioning_scale,
                 }
             )
 
@@ -553,6 +610,56 @@ class ImagePreprocessor:
         return (convert_images_to_tensors(images),)
 
 
+class ControlImagePreprocessor:
+    def __init__(self):
+        self.torch_device = get_torch_device()
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "front_view": ("IMAGE",),
+                "front_right_view": ("IMAGE",),
+                "right_view": ("IMAGE",),
+                "back_view": ("IMAGE",),
+                "left_view": ("IMAGE",),
+                "front_left_view": ("IMAGE",),
+                "width": ("INT", {"default": 768, "min": 1, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 768, "min": 1, "max": 2048, "step": 1}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+
+    FUNCTION = "process"
+
+    def process(
+        self,
+        front_view,
+        front_right_view,
+        right_view,
+        back_view,
+        left_view,
+        front_left_view,
+        width,
+        height,
+    ):
+        images = torch.cat(
+            [
+                front_view,
+                front_right_view,
+                right_view,
+                back_view,
+                left_view,
+                front_left_view,
+            ],
+            dim=0,
+        )
+        images = convert_tensors_to_images(images)
+        images = [img.resize((width, height)).convert("RGB") for img in images]
+        return (convert_images_to_tensors(images),)
+
+
 NODE_CLASS_MAPPINGS = {
     "LdmPipelineLoader": LdmPipelineLoader,
     "LdmVaeLoader": LdmVaeLoader,
@@ -565,6 +672,8 @@ NODE_CLASS_MAPPINGS = {
     "DiffusersMVSampler": DiffusersMVSampler,
     "BiRefNet": BiRefNet,
     "ImagePreprocessor": ImagePreprocessor,
+    "ControlNetModelLoader": ControlNetModelLoader,
+    "ControlImagePreprocessor": ControlImagePreprocessor,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -579,4 +688,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DiffusersMVSampler": "Diffusers MV Sampler",
     "BiRefNet": "BiRefNet",
     "ImagePreprocessor": "Image Preprocessor",
+    "ControlNetModelLoader": "ControlNet Model Loader",
+    "ControlImagePreprocessor": "Control Image Preprocessor",
 }

@@ -309,6 +309,9 @@ class MVAdapterI2MVSDXLPipeline(StableDiffusionXLPipeline, CustomAdapterMixin):
         # Image condition
         reference_image: Optional[PipelineImageInput] = None,
         reference_conditioning_scale: Optional[float] = 1.0,
+        # Optional. controlnet
+        controlnet_image: Optional[PipelineImageInput] = None,
+        controlnet_conditioning_scale: Optional[float] = 1.0,
         **kwargs,
     ):
         r"""
@@ -674,6 +677,21 @@ class MVAdapterI2MVSDXLPipeline(StableDiffusionXLPipeline, CustomAdapterMixin):
         for i, state in enumerate(adapter_state):
             adapter_state[i] = state * control_conditioning_scale
 
+        # Preprocess controlnet image if provided
+        do_controlnet = controlnet_image is not None and hasattr(self, "controlnet")
+        if do_controlnet:
+            controlnet_image = self.prepare_control_image(
+                image=controlnet_image,
+                width=width,
+                height=height,
+                batch_size=batch_size * num_images_per_prompt,
+                num_images_per_prompt=1,  # NOTE: always 1 for control images
+                device=device,
+                dtype=latents.dtype,
+                do_classifier_free_guidance=self.do_classifier_free_guidance,
+            )
+            controlnet_image = controlnet_image.to(device=device, dtype=latents.dtype)
+
         # 8. Denoising loop
         num_warmup_steps = max(
             len(timesteps) - num_inference_steps * self.scheduler.order, 0
@@ -738,6 +756,27 @@ class MVAdapterI2MVSDXLPipeline(StableDiffusionXLPipeline, CustomAdapterMixin):
                 else:
                     down_intrablock_additional_residuals = None
 
+                unet_add_kwargs = {}
+
+                # Do controlnet if provided
+                if do_controlnet:
+                    down_block_res_samples, mid_block_res_sample = self.controlnet(
+                        latent_model_input,
+                        t,
+                        encoder_hidden_states=prompt_embeds,
+                        controlnet_cond=controlnet_image,
+                        conditioning_scale=controlnet_conditioning_scale,
+                        guess_mode=False,
+                        added_cond_kwargs=added_cond_kwargs,
+                        return_dict=False,
+                    )
+                    unet_add_kwargs.update(
+                        {
+                            "down_block_additional_residuals": down_block_res_samples,
+                            "mid_block_additional_residual": mid_block_res_sample,
+                        }
+                    )
+
                 # predict the noise residual
                 noise_pred = self.unet(
                     latent_model_input,
@@ -748,6 +787,7 @@ class MVAdapterI2MVSDXLPipeline(StableDiffusionXLPipeline, CustomAdapterMixin):
                     down_intrablock_additional_residuals=down_intrablock_additional_residuals,
                     added_cond_kwargs=added_cond_kwargs,
                     return_dict=False,
+                    **unet_add_kwargs,
                 )[0]
 
                 # perform guidance
