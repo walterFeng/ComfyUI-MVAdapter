@@ -474,6 +474,7 @@ class DiffusersMVSampler:
                 "reference_image": ("IMAGE",),
                 "controlnet_image": ("IMAGE",),
                 "controlnet_conditioning_scale": ("FLOAT", {"default": 1.0}),
+                "azimuth_deg": ("STRING", {"default": '-90 -45 0 90 180 225'}),
             },
         }
 
@@ -497,8 +498,10 @@ class DiffusersMVSampler:
         reference_image=None,
         controlnet_image=None,
         controlnet_conditioning_scale=1.0,
+        azimuth_deg='-90 -45 0 90 180 225',
     ):
-        control_images = prepare_camera_embed(num_views, width, self.torch_device)
+        azimuth_deg_array = list(map(int, azimuth_deg.split()))
+        control_images = prepare_camera_embed(num_views, width, self.torch_device, azimuth_deg_array)
 
         pipe_kwargs = {}
         if reference_image is not None:

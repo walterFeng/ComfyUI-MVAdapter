@@ -294,15 +294,16 @@ def resize_images(images: list[Image.Image], size: tuple[int, int]):
     return [image.resize(size) for image in images]
 
 
-def prepare_camera_embed(num_views, size, device):
+def prepare_camera_embed(num_views, size, device, azimuth_deg):
+    elevation_deg = list(map(lambda x: 0, azimuth_deg))
     cameras = get_orthogonal_camera(
-        elevation_deg=[0, 0, 0, 0, 0, 0],
+        elevation_deg=elevation_deg,
         distance=[1.8] * num_views,
         left=-0.55,
         right=0.55,
         bottom=-0.55,
         top=0.55,
-        azimuth_deg=[x - 90 for x in [0, 45, 90, 180, 270, 315]],
+        azimuth_deg=azimuth_deg,
         device=device,
     )
 
